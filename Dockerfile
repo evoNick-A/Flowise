@@ -23,16 +23,23 @@ RUN apk update && \
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
-ENV NODE_OPTIONS=--max-old-space-size=8192
+# Increase Node heap size to prevent OOM during build
+ENV NODE_OPTIONS="--max-old-space-size=6144"
 
 WORKDIR /usr/src/flowise
 
-# Copy app source
+# Copy all source files
 COPY . .
 
-# Install dependencies and build
-RUN pnpm install && \
-    pnpm build
+# Install dependencies
+RUN pnpm install
+
+# Build with limited concurrency and increased memory
+RUN pnpm build --concurrency=1
+
+# Create data directories with proper permissions
+RUN mkdir -p /var/data/flowise/logs && \
+    chown -R node:node /var/data/flowise
 
 # Give the node user ownership of the application files
 RUN chown -R node:node .
